@@ -86,9 +86,9 @@ const OrdersPage = () => {
 
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const updates: Record<string, unknown> = { status };
-      if (status === "concluido") updates.completed_at = new Date().toISOString();
-      const { error } = await supabase.from("service_orders").update(updates).eq("id", id);
+      const typedStatus = status as "pendente" | "em_andamento" | "concluido" | "cancelado";
+      const completed_at = status === "concluido" ? new Date().toISOString() : undefined;
+      const { error } = await supabase.from("service_orders").update({ status: typedStatus, completed_at }).eq("id", id);
       if (error) throw error;
     },
     onSuccess: () => {
