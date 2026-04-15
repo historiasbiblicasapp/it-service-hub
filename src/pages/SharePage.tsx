@@ -3,8 +3,22 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MessageCircle, Send } from "lucide-react";
+import { MessageCircle, Send, Copy } from "lucide-react";
 import { toast } from "sonner";
+
+const openWhatsApp = (text: string) => {
+  navigator.clipboard.writeText(text).then(() => {
+    toast.success("Texto copiado! Cole no WhatsApp.");
+  }).catch(() => {});
+  
+  // Try multiple WhatsApp URL schemes
+  const encoded = encodeURIComponent(text);
+  const w = window.open(`https://web.whatsapp.com/send?text=${encoded}`, "_blank");
+  if (!w) {
+    // fallback: try wa.me
+    window.open(`https://wa.me/?text=${encoded}`, "_blank");
+  }
+};
 
 const SharePage = () => {
   const { data: services = [] } = useQuery({
@@ -19,20 +33,23 @@ const SharePage = () => {
   const shareAllServices = () => {
     const lines = services.map((s) => `✅ ${s.name} - R$ ${Number(s.cost).toFixed(2)}`);
     const text = `🖥️ *Serviços de TI Disponíveis*\n\n${lines.join("\n")}\n\n📞 Entre em contato para mais informações!`;
-    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
-    window.open(url, "_blank");
+    openWhatsApp(text);
   };
 
   const shareSingleService = (name: string, cost: number, description: string | null) => {
     const text = `🖥️ *Oferta de Serviço de TI*\n\n✅ *${name}*\n${description || ""}\n💰 Valor: R$ ${cost.toFixed(2)}\n\n📞 Entre em contato para agendar!`;
-    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
-    window.open(url, "_blank");
+    openWhatsApp(text);
   };
 
   const shareQuote = (name: string, cost: number) => {
     const text = `📋 *Orçamento de Serviço*\n\n🔧 Serviço: *${name}*\n💰 Valor estimado: R$ ${cost.toFixed(2)}\n\n⚠️ Valor sujeito a análise técnica.\n📞 Entre em contato para confirmar!`;
-    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
-    window.open(url, "_blank");
+    openWhatsApp(text);
+  };
+
+  const copyText = (text: string) => {
+    navigator.clipboard.writeText(text).then(() => {
+      toast.success("Texto copiado para a área de transferência!");
+    });
   };
 
   return (
@@ -50,9 +67,17 @@ const SharePage = () => {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground mb-4">Envie a lista completa de serviços disponíveis.</p>
-          <Button onClick={shareAllServices} className="bg-success hover:bg-success/90 text-success-foreground">
-            <Send className="w-4 h-4 mr-2" /> Enviar todos os serviços
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={shareAllServices} className="bg-success hover:bg-success/90 text-success-foreground">
+              <Send className="w-4 h-4 mr-2" /> Enviar todos os serviços
+            </Button>
+            <Button variant="outline" onClick={() => {
+              const lines = services.map((s) => `✅ ${s.name} - R$ ${Number(s.cost).toFixed(2)}`);
+              copyText(`🖥️ *Serviços de TI Disponíveis*\n\n${lines.join("\n")}\n\n📞 Entre em contato para mais informações!`);
+            }}>
+              <Copy className="w-4 h-4 mr-2" /> Copiar texto
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
@@ -65,7 +90,7 @@ const SharePage = () => {
             <CardContent>
               <p className="text-sm text-muted-foreground mb-2">{service.description}</p>
               <Badge className="mb-4 bg-primary/10 text-primary border-0">R$ {Number(service.cost).toFixed(2)}</Badge>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Button size="sm" variant="outline" onClick={() => shareSingleService(service.name, Number(service.cost), service.description)}>
                   <Send className="w-3 h-3 mr-1" /> Oferta
                 </Button>
