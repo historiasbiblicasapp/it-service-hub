@@ -7,17 +7,8 @@ import { MessageCircle, Send, Copy } from "lucide-react";
 import { toast } from "sonner";
 
 const openWhatsApp = (text: string) => {
-  navigator.clipboard.writeText(text).then(() => {
-    toast.success("Texto copiado! Cole no WhatsApp.");
-  }).catch(() => {});
-  
-  // Try multiple WhatsApp URL schemes
   const encoded = encodeURIComponent(text);
-  const w = window.open(`https://web.whatsapp.com/send?text=${encoded}`, "_blank");
-  if (!w) {
-    // fallback: try wa.me
-    window.open(`https://wa.me/?text=${encoded}`, "_blank");
-  }
+  window.open(`https://api.whatsapp.com/send?text=${encoded}`, "_blank");
 };
 
 const SharePage = () => {
