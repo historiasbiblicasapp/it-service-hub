@@ -12,7 +12,11 @@ const navItems = [
   { to: "/share", icon: Share2, label: "Compartilhar" },
 ];
 
-const AppSidebar = () => {
+interface AppSidebarProps {
+  onNavigate?: () => void;
+}
+
+const AppSidebar = ({ onNavigate }: AppSidebarProps) => {
   const { signOut } = useAuth();
   const location = useLocation();
 
@@ -28,6 +32,7 @@ const AppSidebar = () => {
           <NavLink
             key={item.to}
             to={item.to}
+            onClick={onNavigate}
             className={cn(
               "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
               location.pathname === item.to

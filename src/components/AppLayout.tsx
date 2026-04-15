@@ -1,7 +1,38 @@
 import { Outlet } from "react-router-dom";
 import AppSidebar from "./AppSidebar";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useState } from "react";
+import { Menu } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
 
 const AppLayout = () => {
+  const isMobile = useIsMobile();
+  const [open, setOpen] = useState(false);
+
+  if (isMobile) {
+    return (
+      <div className="min-h-screen">
+        <header className="sticky top-0 z-50 flex items-center gap-3 p-3 bg-primary">
+          <Sheet open={open} onOpenChange={setOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary-foreground/10">
+                <Menu className="w-6 h-6" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="p-0 w-64 border-0">
+              <AppSidebar onNavigate={() => setOpen(false)} />
+            </SheetContent>
+          </Sheet>
+          <span className="text-primary-foreground font-bold text-lg">Ponto Digital</span>
+        </header>
+        <main className="p-4 overflow-auto">
+          <Outlet />
+        </main>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen">
       <AppSidebar />
