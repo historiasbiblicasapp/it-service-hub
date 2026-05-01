@@ -8,9 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Pencil, Trash2, Wallet, TrendingUp } from "lucide-react";
+import { Plus, Pencil, Trash2, Wallet, TrendingUp, Calendar } from "lucide-react";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from "recharts";
 import type { Tables } from "@/integrations/supabase/types";
@@ -27,18 +27,24 @@ const FinancePage = () => {
   const [form, setForm] = useState({ category_id: "", description: "", amount: "", expense_date: new Date().toISOString().split("T")[0] });
   const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
 
-  const { data: expenses = [] } = useQuery({
-    queryKey: ["expenses", selectedMonth],
+  const { data: allExpenses = [] } = useQuery({
+    queryKey: ["expenses-all"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("expenses")
         .select("*, expense_categories(name, icon)")
-        .gte("expense_date", `${selectedMonth}-01`)
-        .lte("expense_date", `${selectedMonth}-31`)
         .order("expense_date", { ascending: false });
       if (error) throw error;
       return data;
     },
+  });
+
+  const startDate = startOfMonth(new Date(selectedMonth + "-01T12:00:00")).toISOString().split("T")[0];
+  const endDate = endOfMonth(new Date(selectedMonth + "-01T12:00:00")).toISOString().split("T")[0];
+
+  const expenses = allExpenses.filter((e) => {
+    const d = e.expense_date.length === 10 ? e.expense_date : e.expense_date.split("T")[0];
+    return d >= startDate && d <= endDate;
   });
 
   const { data: categories = [] } = useQuery({
@@ -66,7 +72,7 @@ const FinancePage = () => {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["expenses-all"] });
       setOpen(false);
       setEditing(null);
       setForm({ category_id: "", description: "", amount: "", expense_date: new Date().toISOString().split("T")[0] });
@@ -81,7 +87,7 @@ const FinancePage = () => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["expenses-all"] });
       toast.success("Despesa removida!");
     },
   });
@@ -103,7 +109,7 @@ const FinancePage = () => {
       category_id: expense.category_id,
       description: expense.description || "",
       amount: String(expense.amount),
-      expense_date: expense.expense_date,
+      expense_date: expense.expense_date.length === 10 ? expense.expense_date : expense.expense_date.split("T")[0],
     });
     setOpen(true);
   };
@@ -118,7 +124,7 @@ const FinancePage = () => {
     return acc;
   }, []);
 
-  const monthLabel = format(new Date(selectedMonth + "-01"), "MMMM yyyy", { locale: ptBR });
+  const monthLabel = format(new Date(selectedMonth + "-01T12:00:00"), "MMMM yyyy", { locale: ptBR });
 
   return (
     <div className="space-y-6">
@@ -133,7 +139,7 @@ const FinancePage = () => {
               <Plus className="w-4 h-4 mr-2" /> Nova Despesa
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editing ? "Editar Despesa" : "Nova Despesa"}</DialogTitle>
             </DialogHeader>
@@ -181,7 +187,7 @@ const FinancePage = () => {
         <Card className="flex-1">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
-              <Wallet className="w-4 h-4" /> Mês/Ano
+              <Calendar className="w-4 h-4" /> Mês/Ano
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -215,11 +221,15 @@ const FinancePage = () => {
         <h2 className="text-lg font-semibold">Despesas - {monthLabel}</h2>
         {expenses.length === 0 ? (
           <Card>
-            <CardContent className="py-8 text-center text-muted-foreground">Nenhuma despesa registrada neste mês</CardContent>
+            <CardContent className="py-8 text-center text-muted-foreground">
+              Nenhuma despesa registrada em {monthLabel}
+              {allExpenses.length > 0 && <p className="text-sm mt-2">Existem despesas em outros meses. Altere o seletor acima.</p>}
+            </CardContent>
           </Card>
         ) : (
           expenses.map((expense) => {
             const cat = (expense.expense_categories as ExpenseCategory);
+            const d = expense.expense_date.length === 10 ? expense.expense_date : expense.expense_date.split("T")[0];
             return (
               <Card key={expense.id} className="hover:shadow-sm transition-shadow">
                 <CardContent className="p-4">
@@ -227,7 +237,7 @@ const FinancePage = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="font-medium truncate">{cat?.name || "Sem categoria"}</span>
-                        <span className="text-xs text-muted-foreground">{format(new Date(expense.expense_date + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })}</span>
+                        <span className="text-xs text-muted-foreground">{format(new Date(d + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })}</span>
                       </div>
                       {expense.description && <p className="text-sm text-muted-foreground mt-1 truncate">{expense.description}</p>}
                     </div>
