@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { FileDown, Search, ChevronDown, ChevronUp } from "lucide-react";
+import { FileDown, Search, ChevronDown, ChevronUp, TrendingUp, TrendingDown, Wallet, ClipboardList } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
@@ -45,12 +45,30 @@ const ReportsPage = () => {
     enabled: true,
   });
 
+  const { data: expenses = [] } = useQuery({
+    queryKey: ["report-expenses", startDate, endDate, filtered],
+    queryFn: async () => {
+      let query = supabase.from("expenses").select("*");
+
+      if (filtered && startDate) query = query.gte("expense_date", startDate);
+      if (filtered && endDate) query = query.lte("expense_date", endDate);
+
+      const { data, error } = await query;
+      if (error) throw error;
+      return data;
+    },
+    enabled: true,
+  });
+
   const handleFilter = () => {
     setFiltered(true);
     refetch();
   };
 
-  const totalRevenue = orders.reduce((acc, o) => acc + Number(o.total_cost), 0);
+  const totalRevenue = orders.filter((o) => o.status === "concluido").reduce((acc, o) => acc + Number(o.total_cost), 0);
+  const pendingRevenue = orders.filter((o) => o.status !== "concluido" && o.status !== "cancelado").reduce((acc, o) => acc + Number(o.total_cost), 0);
+  const totalExpenses = expenses.reduce((acc, e) => acc + Number(e.amount), 0);
+  const balance = totalRevenue - totalExpenses;
   const completedOrders = orders.filter((o) => o.status === "concluido").length;
 
   const exportToPDF = async () => {
@@ -68,9 +86,10 @@ const ReportsPage = () => {
 
     doc.setFontSize(10);
     doc.text(`Total de atendimentos: ${orders.length} | Concluídos: ${completedOrders} | Receita total: R$ ${totalRevenue.toFixed(2)}`, 14, 38);
+    doc.text(`Despesas: R$ ${totalExpenses.toFixed(2)} | Saldo: R$ ${balance.toFixed(2)}`, 14, 46);
 
     autoTable(doc, {
-      startY: 45,
+      startY: 55,
       head: [["Data", "Cliente", "Serviço", "Descrição", "Valor", "Status"]],
       body: orders.map((o) => [
         format(new Date(o.created_at), "dd/MM/yyyy"),
@@ -122,20 +141,36 @@ const ReportsPage = () => {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Total de Atendimentos</CardTitle></CardHeader>
-          <CardContent><p className="text-3xl font-bold">{orders.length}</p></CardContent>
+          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground flex items-center gap-1"><ClipboardList className="w-3.5 h-3.5" /> Atendimentos</CardTitle></CardHeader>
+          <CardContent><p className="text-2xl font-bold">{orders.length}</p></CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Concluídos</CardTitle></CardHeader>
-          <CardContent><p className="text-3xl font-bold text-success">{completedOrders}</p></CardContent>
+          <CardContent><p className="text-2xl font-bold text-success">{completedOrders}</p></CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Receita Total</CardTitle></CardHeader>
-          <CardContent><p className="text-3xl font-bold text-primary">R$ {totalRevenue.toFixed(2)}</p></CardContent>
+          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground flex items-center gap-1"><TrendingUp className="w-3.5 h-3.5" /> Receita</CardTitle></CardHeader>
+          <CardContent><p className="text-2xl font-bold text-primary">R$ {totalRevenue.toFixed(2)}</p></CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground flex items-center gap-1"><TrendingDown className="w-3.5 h-3.5" /> Despesas</CardTitle></CardHeader>
+          <CardContent><p className="text-2xl font-bold text-destructive">R$ {totalExpenses.toFixed(2)}</p></CardContent>
+        </Card>
+        <Card className="col-span-2 lg:col-span-1">
+          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground flex items-center gap-1"><Wallet className="w-3.5 h-3.5" /> Saldo</CardTitle></CardHeader>
+          <CardContent><p className={`text-2xl font-bold ${balance >= 0 ? "text-success" : "text-destructive"}`}>R$ {balance.toFixed(2)}</p></CardContent>
         </Card>
       </div>
+
+      {pendingRevenue > 0 && (
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground">A receber (pendentes): <span className="font-bold text-warning">R$ {pendingRevenue.toFixed(2)}</span></p>
+          </CardContent>
+        </Card>
+      )}
 
       {isLoading ? <p className="text-muted-foreground">Carregando...</p> : orders.length === 0 ? (
         <Card>
