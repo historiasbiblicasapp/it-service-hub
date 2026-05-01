@@ -33,9 +33,11 @@ const FinancePage = () => {
       const { data, error } = await supabase
         .from("expenses")
         .select("*, expense_categories(name, icon)")
+        .gte("expense_date", `${selectedMonth}-01`)
+        .lte("expense_date", `${selectedMonth}-31`)
         .order("expense_date", { ascending: false });
       if (error) throw error;
-      return data.filter((e) => (e.expense_date as string).startsWith(selectedMonth));
+      return data;
     },
   });
 
