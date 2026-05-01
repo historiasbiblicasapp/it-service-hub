@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Pencil, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -34,6 +34,7 @@ const OrdersPage = () => {
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<any>(null);
   const [form, setForm] = useState({ customer_id: "", service_id: "", description: "", total_cost: "", status: "pendente" as string, order_date: new Date().toISOString().split("T")[0] });
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -61,30 +62,54 @@ const OrdersPage = () => {
   const { data: services = [] } = useQuery({
     queryKey: ["services"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("services").select("*").eq("active", true).order("name");
+      const { data, error } = await supabase.from("services").select("*").order("name");
       if (error) throw error;
       return data;
     },
   });
 
   const createMutation = useMutation({
-    mutationFn: async (order: { customer_id: string; service_id: string; description: string; total_cost: number; status: string }) => {
+    mutationFn: async (order: { customer_id: string; service_id: string; description: string; total_cost: number; status: string; order_date: string }) => {
       const { error } = await supabase.from("service_orders").insert({
         customer_id: order.customer_id,
         service_id: order.service_id,
         description: order.description,
         total_cost: order.total_cost,
         status: order.status as "pendente" | "em_andamento" | "concluido" | "cancelado",
+        order_date: order.order_date,
       });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       setOpen(false);
+      setEditing(null);
       setForm({ customer_id: "", service_id: "", description: "", total_cost: "", status: "pendente", order_date: new Date().toISOString().split("T")[0] });
       toast.success("Atendimento criado!");
     },
     onError: () => toast.error("Erro ao criar atendimento"),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async (order: { id: string; customer_id: string; service_id: string; description: string; total_cost: number; status: string; order_date: string }) => {
+      const { error } = await supabase.from("service_orders").update({
+        customer_id: order.customer_id,
+        service_id: order.service_id,
+        description: order.description,
+        total_cost: order.total_cost,
+        status: order.status as "pendente" | "em_andamento" | "concluido" | "cancelado",
+        order_date: order.order_date,
+      }).eq("id", order.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      setOpen(false);
+      setEditing(null);
+      setForm({ customer_id: "", service_id: "", description: "", total_cost: "", status: "pendente", order_date: new Date().toISOString().split("T")[0] });
+      toast.success("Atendimento atualizado!");
+    },
+    onError: () => toast.error("Erro ao atualizar atendimento"),
   });
 
   const updateStatusMutation = useMutation({
@@ -103,14 +128,26 @@ const OrdersPage = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const selectedService = services.find((s) => s.id === form.service_id);
-    createMutation.mutate({
-      customer_id: form.customer_id,
-      service_id: form.service_id,
-      description: form.description,
-      total_cost: parseFloat(form.total_cost) || selectedService?.cost || 0,
-      status: form.status,
-      order_date: form.order_date,
-    });
+    if (editing) {
+      updateMutation.mutate({
+        id: editing.id,
+        customer_id: form.customer_id,
+        service_id: form.service_id,
+        description: form.description,
+        total_cost: parseFloat(form.total_cost) || selectedService?.cost || 0,
+        status: form.status,
+        order_date: form.order_date,
+      });
+    } else {
+      createMutation.mutate({
+        customer_id: form.customer_id,
+        service_id: form.service_id,
+        description: form.description,
+        total_cost: parseFloat(form.total_cost) || selectedService?.cost || 0,
+        status: form.status,
+        order_date: form.order_date,
+      });
+    }
   };
 
   const handleServiceChange = (serviceId: string) => {
@@ -122,6 +159,25 @@ const OrdersPage = () => {
     setExpandedId(expandedId === id ? null : id);
   };
 
+  const openEdit = (order: any) => {
+    setEditing(order);
+    setForm({
+      customer_id: order.customer_id,
+      service_id: order.service_id,
+      description: order.description || "",
+      total_cost: String(order.total_cost),
+      status: order.status,
+      order_date: order.order_date ? order.order_date.split("T")[0] : new Date().toISOString().split("T")[0],
+    });
+    setOpen(true);
+  };
+
+  const openNew = () => {
+    setEditing(null);
+    setForm({ customer_id: "", service_id: "", description: "", total_cost: "", status: "pendente", order_date: new Date().toISOString().split("T")[0] });
+    setOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -131,10 +187,10 @@ const OrdersPage = () => {
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button><Plus className="w-4 h-4 mr-2" /> Novo Atendimento</Button>
+            <Button onClick={openNew}><Plus className="w-4 h-4 mr-2" /> Novo Atendimento</Button>
           </DialogTrigger>
           <DialogContent className="max-h-[90vh] overflow-y-auto">
-            <DialogHeader><DialogTitle>Novo Atendimento</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{editing ? "Editar Atendimento" : "Novo Atendimento"}</DialogTitle></DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label>Cliente</Label>
@@ -158,15 +214,30 @@ const OrdersPage = () => {
                 <Label>Descrição</Label>
                 <Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Detalhes do atendimento..." />
               </div>
-              <div className="space-y-2">
-                <Label>Valor Total (R$)</Label>
-                <Input type="number" step="0.01" min="0" value={form.total_cost} onChange={(e) => setForm({ ...form, total_cost: e.target.value })} />
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label>Valor Total (R$)</Label>
+                  <Input type="number" step="0.01" min="0" value={form.total_cost} onChange={(e) => setForm({ ...form, total_cost: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Data</Label>
+                  <Input type="date" value={form.order_date} onChange={(e) => setForm({ ...form, order_date: e.target.value })} />
+                </div>
               </div>
               <div className="space-y-2">
-                <Label>Data do Atendimento</Label>
-                <Input type="date" value={form.order_date} onChange={(e) => setForm({ ...form, order_date: e.target.value })} />
+                <Label>Status</Label>
+                <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(statusLabels).map(([k, v]) => (
+                      <SelectItem key={k} value={k}>{v}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <Button type="submit" className="w-full" disabled={createMutation.isPending || !form.customer_id || !form.service_id}>Criar Atendimento</Button>
+              <Button type="submit" className="w-full" disabled={(createMutation.isPending || updateMutation.isPending) || !form.customer_id || !form.service_id}>
+                {editing ? "Salvar Alterações" : "Criar Atendimento"}
+              </Button>
             </form>
           </DialogContent>
         </Dialog>
@@ -222,6 +293,9 @@ const OrdersPage = () => {
                         </SelectContent>
                       </Select>
                     </div>
+                    <Button variant="outline" size="sm" className="w-full" onClick={() => openEdit(order)}>
+                      <Pencil className="w-3.5 h-3.5 mr-1" /> Editar Atendimento
+                    </Button>
                   </div>
                 )}
               </div>
@@ -240,6 +314,7 @@ const OrdersPage = () => {
                   <TableHead>Descrição</TableHead>
                   <TableHead>Valor</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead className="w-20">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -261,6 +336,11 @@ const OrdersPage = () => {
                           ))}
                         </SelectContent>
                       </Select>
+                    </TableCell>
+                    <TableCell>
+                      <Button variant="ghost" size="icon" onClick={() => openEdit(order)}>
+                        <Pencil className="w-4 h-4" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
