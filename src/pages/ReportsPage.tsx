@@ -7,10 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { FileDown, Search } from "lucide-react";
+import { FileDown, Search, ChevronDown, ChevronUp } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const statusLabels: Record<string, string> = {
   pendente: "Pendente",
@@ -20,9 +21,11 @@ const statusLabels: Record<string, string> = {
 };
 
 const ReportsPage = () => {
+  const isMobile = useIsMobile();
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [filtered, setFiltered] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const { data: orders = [], isLoading, refetch } = useQuery({
     queryKey: ["report-orders", startDate, endDate, filtered],
@@ -51,7 +54,6 @@ const ReportsPage = () => {
   const completedOrders = orders.filter((o) => o.status === "concluido").length;
 
   const exportToPDF = async () => {
-    // Dynamic import to keep bundle small
     const { jsPDF } = await import("jspdf");
     const autoTable = (await import("jspdf-autotable")).default;
 
@@ -86,6 +88,10 @@ const ReportsPage = () => {
     toast.success("PDF exportado com sucesso!");
   };
 
+  const toggleExpand = (id: string) => {
+    setExpandedId(expandedId === id ? null : id);
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -95,24 +101,28 @@ const ReportsPage = () => {
 
       <Card>
         <CardContent className="pt-6">
-          <div className="flex flex-wrap items-end gap-4">
-            <div className="space-y-2">
-              <Label>Data Início</Label>
-              <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="space-y-2 flex-1">
+                <Label>Data Início</Label>
+                <Input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+              </div>
+              <div className="space-y-2 flex-1">
+                <Label>Data Fim</Label>
+                <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label>Data Fim</Label>
-              <Input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} />
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button onClick={handleFilter} className="w-full sm:w-auto"><Search className="w-4 h-4 mr-2" /> Filtrar</Button>
+              <Button variant="outline" onClick={exportToPDF} disabled={orders.length === 0} className="w-full sm:w-auto">
+                <FileDown className="w-4 h-4 mr-2" /> Exportar PDF
+              </Button>
             </div>
-            <Button onClick={handleFilter}><Search className="w-4 h-4 mr-2" /> Filtrar</Button>
-            <Button variant="outline" onClick={exportToPDF} disabled={orders.length === 0}>
-              <FileDown className="w-4 h-4 mr-2" /> Exportar PDF
-            </Button>
           </div>
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Total de Atendimentos</CardTitle></CardHeader>
           <CardContent><p className="text-3xl font-bold">{orders.length}</p></CardContent>
@@ -127,7 +137,50 @@ const ReportsPage = () => {
         </Card>
       </div>
 
-      {isLoading ? <p className="text-muted-foreground">Carregando...</p> : (
+      {isLoading ? <p className="text-muted-foreground">Carregando...</p> : orders.length === 0 ? (
+        <Card>
+          <CardContent className="py-8 text-center text-muted-foreground">Nenhum atendimento encontrado</CardContent>
+        </Card>
+      ) : isMobile ? (
+        <div className="space-y-3">
+          {orders.map((order) => (
+            <Card key={order.id} className="overflow-hidden">
+              <div className="p-4 cursor-pointer" onClick={() => toggleExpand(order.id)}>
+                <div className="flex items-center justify-between">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{(order.customers as any)?.name}</p>
+                    <p className="text-sm text-muted-foreground">{(order.services as any)?.name}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="outline">{statusLabels[order.status]}</Badge>
+                    {expandedId === order.id ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                  </div>
+                </div>
+                {expandedId === order.id && (
+                  <div className="mt-4 pt-4 border-t space-y-3">
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">Data:</span>
+                        <p className="font-medium">{format(new Date(order.created_at), "dd/MM/yyyy", { locale: ptBR })}</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Valor:</span>
+                        <p className="font-semibold">R$ {Number(order.total_cost).toFixed(2)}</p>
+                      </div>
+                    </div>
+                    {order.description && (
+                      <div>
+                        <span className="text-muted-foreground">Descrição:</span>
+                        <p className="text-sm mt-1">{order.description}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </Card>
+          ))}
+        </div>
+      ) : (
         <Card>
           <CardContent className="p-0">
             <Table>
@@ -152,9 +205,6 @@ const ReportsPage = () => {
                     <TableCell><Badge variant="outline">{statusLabels[order.status]}</Badge></TableCell>
                   </TableRow>
                 ))}
-                {orders.length === 0 && (
-                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Nenhum atendimento encontrado</TableCell></TableRow>
-                )}
               </TableBody>
             </Table>
           </CardContent>

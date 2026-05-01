@@ -12,21 +12,23 @@ const AppLayout = () => {
 
   if (isMobile) {
     return (
-      <div className="min-h-screen">
-        <header className="sticky top-0 z-50 flex items-center gap-3 p-3 bg-primary">
+      <div className="min-h-screen bg-background">
+        <header className="sticky top-0 z-50 flex items-center gap-3 px-4 py-3 bg-primary border-b border-primary-foreground/10 shadow-sm">
           <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary-foreground/10">
-                <Menu className="w-6 h-6" />
+              <Button variant="ghost" size="icon" className="text-primary-foreground hover:bg-primary-foreground/10 h-9 w-9">
+                <Menu className="w-5 h-5" />
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="p-0 w-64 border-0">
               <AppSidebar onNavigate={() => setOpen(false)} />
             </SheetContent>
           </Sheet>
-          <span className="text-primary-foreground font-bold text-lg">Ponto Digital</span>
+          <div className="flex items-center gap-2">
+            <span className="text-primary-foreground font-bold text-base">Ponto Digital</span>
+          </div>
         </header>
-        <main className="p-4 overflow-auto">
+        <main className="p-4 pb-24">
           <Outlet />
         </main>
       </div>

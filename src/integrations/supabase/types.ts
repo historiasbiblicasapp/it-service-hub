@@ -111,6 +111,7 @@ export type Database = {
           service_id: string
           status: Database["public"]["Enums"]["order_status"]
           total_cost: number
+          order_date: string
         }
         Insert: {
           completed_at?: string | null
@@ -122,6 +123,7 @@ export type Database = {
           service_id: string
           status?: Database["public"]["Enums"]["order_status"]
           total_cost?: number
+          order_date?: string
         }
         Update: {
           completed_at?: string | null
@@ -133,6 +135,7 @@ export type Database = {
           service_id?: string
           status?: Database["public"]["Enums"]["order_status"]
           total_cost?: number
+          order_date?: string
         }
         Relationships: [
           {
@@ -147,6 +150,62 @@ export type Database = {
             columns: ["service_id"]
             isOneToOne: false
             referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      expense_categories: {
+        Row: {
+          id: string
+          name: string
+          icon: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          icon?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          icon?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
+      expenses: {
+        Row: {
+          id: string
+          category_id: string
+          description: string | null
+          amount: number
+          expense_date: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          category_id: string
+          description?: string | null
+          amount?: number
+          expense_date?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          category_id?: string
+          description?: string | null
+          amount?: number
+          expense_date?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "expenses_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "expense_categories"
             referencedColumns: ["id"]
           },
         ]

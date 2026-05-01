@@ -10,6 +10,7 @@ import OrdersPage from "@/pages/OrdersPage";
 import ServicesPage from "@/pages/ServicesPage";
 import CustomersPage from "@/pages/CustomersPage";
 import ReportsPage from "@/pages/ReportsPage";
+import FinancePage from "@/pages/FinancePage";
 import SharePage from "@/pages/SharePage";
 import NotFound from "@/pages/NotFound";
 
@@ -35,6 +36,7 @@ const ProtectedRoutes = () => {
         <Route path="services" element={<ServicesPage />} />
         <Route path="customers" element={<CustomersPage />} />
         <Route path="reports" element={<ReportsPage />} />
+        <Route path="finance" element={<FinancePage />} />
         <Route path="share" element={<SharePage />} />
       </Route>
       <Route path="*" element={<NotFound />} />

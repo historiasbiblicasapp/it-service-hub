@@ -92,7 +92,7 @@ const ServicesPage = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold text-foreground">Serviços</h1>
           <p className="text-muted-foreground">Gerencie seus serviços e preços</p>
@@ -101,7 +101,7 @@ const ServicesPage = () => {
           <DialogTrigger asChild>
             <Button onClick={openNew}><Plus className="w-4 h-4 mr-2" /> Novo Serviço</Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editing ? "Editar Serviço" : "Novo Serviço"}</DialogTitle>
             </DialogHeader>
@@ -127,7 +127,7 @@ const ServicesPage = () => {
       {isLoading ? (
         <p className="text-muted-foreground">Carregando...</p>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {services.map((service) => (
             <Card key={service.id} className={!service.active ? "opacity-50" : ""}>
               <CardHeader className="pb-3">

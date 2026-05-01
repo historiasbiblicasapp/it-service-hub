@@ -10,10 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus } from "lucide-react";
+import { Plus, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const statusLabels: Record<string, string> = {
   pendente: "Pendente",
@@ -31,8 +32,10 @@ const statusColors: Record<string, string> = {
 
 const OrdersPage = () => {
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
-  const [form, setForm] = useState({ customer_id: "", service_id: "", description: "", total_cost: "", status: "pendente" as string });
+  const [form, setForm] = useState({ customer_id: "", service_id: "", description: "", total_cost: "", status: "pendente" as string, order_date: new Date().toISOString().split("T")[0] });
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ["orders"],
@@ -78,7 +81,7 @@ const OrdersPage = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       setOpen(false);
-      setForm({ customer_id: "", service_id: "", description: "", total_cost: "", status: "pendente" });
+      setForm({ customer_id: "", service_id: "", description: "", total_cost: "", status: "pendente", order_date: new Date().toISOString().split("T")[0] });
       toast.success("Atendimento criado!");
     },
     onError: () => toast.error("Erro ao criar atendimento"),
@@ -106,6 +109,7 @@ const OrdersPage = () => {
       description: form.description,
       total_cost: parseFloat(form.total_cost) || selectedService?.cost || 0,
       status: form.status,
+      order_date: form.order_date,
     });
   };
 
@@ -114,9 +118,13 @@ const OrdersPage = () => {
     setForm({ ...form, service_id: serviceId, total_cost: String(service?.cost || 0) });
   };
 
+  const toggleExpand = (id: string) => {
+    setExpandedId(expandedId === id ? null : id);
+  };
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Atendimentos</h1>
           <p className="text-muted-foreground">Gerencie os atendimentos aos clientes</p>
@@ -125,7 +133,7 @@ const OrdersPage = () => {
           <DialogTrigger asChild>
             <Button><Plus className="w-4 h-4 mr-2" /> Novo Atendimento</Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-h-[90vh] overflow-y-auto">
             <DialogHeader><DialogTitle>Novo Atendimento</DialogTitle></DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
@@ -154,13 +162,73 @@ const OrdersPage = () => {
                 <Label>Valor Total (R$)</Label>
                 <Input type="number" step="0.01" min="0" value={form.total_cost} onChange={(e) => setForm({ ...form, total_cost: e.target.value })} />
               </div>
+              <div className="space-y-2">
+                <Label>Data do Atendimento</Label>
+                <Input type="date" value={form.order_date} onChange={(e) => setForm({ ...form, order_date: e.target.value })} />
+              </div>
               <Button type="submit" className="w-full" disabled={createMutation.isPending || !form.customer_id || !form.service_id}>Criar Atendimento</Button>
             </form>
           </DialogContent>
         </Dialog>
       </div>
 
-      {isLoading ? <p className="text-muted-foreground">Carregando...</p> : (
+      {isLoading ? <p className="text-muted-foreground">Carregando...</p> : orders.length === 0 ? (
+        <Card>
+          <CardContent className="py-8 text-center text-muted-foreground">Nenhum atendimento registrado</CardContent>
+        </Card>
+      ) : isMobile ? (
+        <div className="space-y-3">
+          {orders.map((order) => (
+            <Card key={order.id} className="overflow-hidden">
+              <div className="p-4 cursor-pointer" onClick={() => toggleExpand(order.id)}>
+                <div className="flex items-center justify-between">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{(order.customers as any)?.name}</p>
+                    <p className="text-sm text-muted-foreground">{(order.services as any)?.name} - {format(new Date(order.order_date + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge className={statusColors[order.status]}>{statusLabels[order.status]}</Badge>
+                    {expandedId === order.id ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                  </div>
+                </div>
+                {expandedId === order.id && (
+                  <div className="mt-4 pt-4 border-t space-y-3">
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <span className="text-muted-foreground">Valor:</span>
+                        <p className="font-medium">R$ {Number(order.total_cost).toFixed(2)}</p>
+                      </div>
+                      <div>
+                        <span className="text-muted-foreground">Status:</span>
+                        <p className="font-medium">{statusLabels[order.status]}</p>
+                      </div>
+                    </div>
+                    {order.description && (
+                      <div>
+                        <span className="text-muted-foreground">Descrição:</span>
+                        <p className="text-sm mt-1">{order.description}</p>
+                      </div>
+                    )}
+                    <div>
+                      <span className="text-muted-foreground text-sm">Status:</span>
+                      <Select value={order.status} onValueChange={(status) => updateStatusMutation.mutate({ id: order.id, status })}>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(statusLabels).map(([k, v]) => (
+                            <SelectItem key={k} value={k}>{v}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </Card>
+          ))}
+        </div>
+      ) : (
         <Card>
           <CardContent className="p-0">
             <Table>
@@ -177,7 +245,7 @@ const OrdersPage = () => {
               <TableBody>
                 {orders.map((order) => (
                   <TableRow key={order.id}>
-                    <TableCell className="whitespace-nowrap">{format(new Date(order.created_at), "dd/MM/yyyy", { locale: ptBR })}</TableCell>
+                    <TableCell className="whitespace-nowrap">{format(new Date(order.order_date + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })}</TableCell>
                     <TableCell className="font-medium">{(order.customers as any)?.name}</TableCell>
                     <TableCell>{(order.services as any)?.name}</TableCell>
                     <TableCell className="max-w-xs truncate">{order.description}</TableCell>
@@ -196,9 +264,6 @@ const OrdersPage = () => {
                     </TableCell>
                   </TableRow>
                 ))}
-                {orders.length === 0 && (
-                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Nenhum atendimento registrado</TableCell></TableRow>
-                )}
               </TableBody>
             </Table>
           </CardContent>
