@@ -107,6 +107,7 @@ export type Database = {
           customer_id: string
           description: string | null
           id: string
+          order_date: string
           service_id: string
           status: Database["public"]["Enums"]["order_status"]
           total_cost: number
@@ -117,6 +118,7 @@ export type Database = {
           customer_id: string
           description?: string | null
           id?: string
+          order_date?: string
           service_id: string
           status?: Database["public"]["Enums"]["order_status"]
           total_cost?: number
@@ -127,6 +129,7 @@ export type Database = {
           customer_id?: string
           description?: string | null
           id?: string
+          order_date?: string
           service_id?: string
           status?: Database["public"]["Enums"]["order_status"]
           total_cost?: number
