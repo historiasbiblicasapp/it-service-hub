@@ -8,9 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Plus, Pencil, Trash2, Wallet, TrendingUp, Calendar } from "lucide-react";
+import { Plus, Pencil, Trash2, Wallet, TrendingUp, Search, FileDown } from "lucide-react";
 import { toast } from "sonner";
-import { format, startOfMonth, endOfMonth } from "date-fns";
+import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from "recharts";
 import type { Tables } from "@/integrations/supabase/types";
@@ -25,9 +25,13 @@ const FinancePage = () => {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Expense | null>(null);
   const [form, setForm] = useState({ category_id: "", description: "", amount: "", expense_date: new Date().toISOString().split("T")[0] });
-  const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7));
 
-  const { data: allExpenses = [] } = useQuery({
+  const [filterStartDate, setFilterStartDate] = useState("");
+  const [filterEndDate, setFilterEndDate] = useState("");
+  const [filterCategory, setFilterCategory] = useState("");
+  const [isFiltered, setIsFiltered] = useState(false);
+
+  const { data: allExpenses = [], isLoading } = useQuery({
     queryKey: ["expenses-all"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -39,12 +43,12 @@ const FinancePage = () => {
     },
   });
 
-  const startDate = startOfMonth(new Date(selectedMonth + "-01T12:00:00")).toISOString().split("T")[0];
-  const endDate = endOfMonth(new Date(selectedMonth + "-01T12:00:00")).toISOString().split("T")[0];
-
   const expenses = allExpenses.filter((e) => {
     const d = e.expense_date.length === 10 ? e.expense_date : e.expense_date.split("T")[0];
-    return d >= startDate && d <= endDate;
+    if (isFiltered && filterStartDate && d < filterStartDate) return false;
+    if (isFiltered && filterEndDate && d > filterEndDate) return false;
+    if (isFiltered && filterCategory && e.category_id !== filterCategory) return false;
+    return true;
   });
 
   const { data: categories = [] } = useQuery({
@@ -55,6 +59,17 @@ const FinancePage = () => {
       return data;
     },
   });
+
+  const handleFilter = () => {
+    setIsFiltered(true);
+  };
+
+  const handleClearFilter = () => {
+    setFilterStartDate("");
+    setFilterEndDate("");
+    setFilterCategory("");
+    setIsFiltered(false);
+  };
 
   const upsertMutation = useMutation({
     mutationFn: async (expense: { category_id: string; description: string; amount: number; expense_date: string; id?: string }) => {
@@ -124,7 +139,45 @@ const FinancePage = () => {
     return acc;
   }, []);
 
-  const monthLabel = format(new Date(selectedMonth + "-01T12:00:00"), "MMMM yyyy", { locale: ptBR });
+  const exportToPDF = async () => {
+    const { jsPDF } = await import("jspdf");
+    const autoTable = (await import("jspdf-autotable")).default;
+
+    const doc = new jsPDF();
+    doc.setFontSize(18);
+    doc.text("Relatório de Despesas", 14, 22);
+
+    if (filterStartDate || filterEndDate || filterCategory) {
+      doc.setFontSize(10);
+      const parts: string[] = [];
+      if (filterStartDate) parts.push(`De: ${format(new Date(filterStartDate + "T12:00:00"), "dd/MM/yyyy")}`);
+      if (filterEndDate) parts.push(`Até: ${format(new Date(filterEndDate + "T12:00:00"), "dd/MM/yyyy")}`);
+      if (filterCategory) {
+        const cat = categories.find((c) => c.id === filterCategory);
+        if (cat) parts.push(`Categoria: ${cat.name}`);
+      }
+      doc.text(`Filtros: ${parts.join(" | ")}`, 14, 30);
+    }
+
+    doc.setFontSize(10);
+    doc.text(`Total de despesas: ${expenses.length} | Valor total: R$ ${totalExpenses.toFixed(2)}`, 14, filterStartDate || filterEndDate || filterCategory ? 38 : 30);
+
+    autoTable(doc, {
+      startY: filterStartDate || filterEndDate || filterCategory ? 45 : 37,
+      head: [["Data", "Categoria", "Descrição", "Valor"]],
+      body: expenses.map((e) => [
+        format(new Date((e.expense_date.length === 10 ? e.expense_date : e.expense_date.split("T")[0]) + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR }),
+        (e.expense_categories as ExpenseCategory)?.name || "",
+        e.description || "",
+        `R$ ${Number(e.amount).toFixed(2)}`,
+      ]),
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [220, 38, 38] },
+    });
+
+    doc.save(`despesas_${filterStartDate || "todas"}_${filterEndDate || "atual"}.pdf`);
+    toast.success("PDF exportado com sucesso!");
+  };
 
   return (
     <div className="space-y-6">
@@ -173,6 +226,42 @@ const FinancePage = () => {
         </Dialog>
       </div>
 
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="space-y-2 flex-1">
+                <Label>Data Início</Label>
+                <Input type="date" value={filterStartDate} onChange={(e) => setFilterStartDate(e.target.value)} />
+              </div>
+              <div className="space-y-2 flex-1">
+                <Label>Data Fim</Label>
+                <Input type="date" value={filterEndDate} onChange={(e) => setFilterEndDate(e.target.value)} />
+              </div>
+              <div className="space-y-2 flex-1">
+                <Label>Categoria</Label>
+                <Select value={filterCategory} onValueChange={(v) => setFilterCategory(v === "all" ? "" : v)}>
+                  <SelectTrigger><SelectValue placeholder="Todas" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas</SelectItem>
+                    {categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button onClick={handleFilter} className="w-full sm:w-auto"><Search className="w-4 h-4 mr-2" /> Filtrar</Button>
+              {isFiltered && (
+                <Button variant="outline" onClick={handleClearFilter} className="w-full sm:w-auto">Limpar Filtros</Button>
+              )}
+              <Button variant="outline" onClick={exportToPDF} disabled={expenses.length === 0} className="w-full sm:w-auto">
+                <FileDown className="w-4 h-4 mr-2" /> Exportar PDF
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="flex flex-col sm:flex-row gap-3">
         <Card className="flex-1">
           <CardHeader className="pb-2">
@@ -187,11 +276,11 @@ const FinancePage = () => {
         <Card className="flex-1">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
-              <Calendar className="w-4 h-4" /> Mês/Ano
+              <Wallet className="w-4 h-4" /> Quantidade
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <Input type="month" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} />
+            <p className="text-3xl font-bold">{expenses.length}</p>
           </CardContent>
         </Card>
       </div>
@@ -199,7 +288,7 @@ const FinancePage = () => {
       {categoryData.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Despesas por Categoria - {monthLabel}</CardTitle>
+            <CardTitle className="text-base">Despesas por Categoria</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-64">
@@ -218,12 +307,14 @@ const FinancePage = () => {
       )}
 
       <div className="space-y-3">
-        <h2 className="text-lg font-semibold">Despesas - {monthLabel}</h2>
+        <h2 className="text-lg font-semibold">
+          Despesas
+          {isFiltered && <span className="text-sm text-muted-foreground font-normal ml-2">(filtrado)</span>}
+        </h2>
         {expenses.length === 0 ? (
           <Card>
             <CardContent className="py-8 text-center text-muted-foreground">
-              Nenhuma despesa registrada em {monthLabel}
-              {allExpenses.length > 0 && <p className="text-sm mt-2">Existem despesas em outros meses. Altere o seletor acima.</p>}
+              {allExpenses.length > 0 ? "Nenhuma despesa encontrada com os filtros selecionados" : "Nenhuma despesa registrada"}
             </CardContent>
           </Card>
         ) : (
