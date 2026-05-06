@@ -100,6 +100,33 @@ export type Database = {
           },
         ]
       }
+      moto_km: {
+        Row: {
+          created_at: string
+          id: string
+          km_anterior: number
+          km_atual: number
+          km_rodado: number
+          record_date: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          km_anterior?: number
+          km_atual: number
+          km_rodado?: number
+          record_date?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          km_anterior?: number
+          km_atual?: number
+          km_rodado?: number
+          record_date?: string
+        }
+        Relationships: []
+      }
       service_orders: {
         Row: {
           completed_at: string | null
