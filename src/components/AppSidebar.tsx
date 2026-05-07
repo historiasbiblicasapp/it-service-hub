@@ -1,6 +1,6 @@
 import { useAuth } from "@/contexts/AuthContext";
 import { NavLink, useLocation } from "react-router-dom";
-import { Wrench, Users, ClipboardList, BarChart3, LogOut, Share2, Wallet, Bike } from "lucide-react";
+import { Wrench, Users, ClipboardList, BarChart3, LogOut, Share2, Wallet, Bike, Receipt } from "lucide-react";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/logo.jpg";
 
@@ -11,6 +11,7 @@ const navItems = [
   { to: "/reports", icon: BarChart3, label: "Relatórios" },
   { to: "/finance", icon: Wallet, label: "Financeiro" },
   { to: "/moto", icon: Bike, label: "Moto" },
+  { to: "/paid-bills", icon: Receipt, label: "Contas Pagas" },
   { to: "/share", icon: Share2, label: "Compartilhar" },
 ];
 

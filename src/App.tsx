@@ -13,6 +13,7 @@ import ReportsPage from "@/pages/ReportsPage";
 import FinancePage from "@/pages/FinancePage";
 import SharePage from "@/pages/SharePage";
 import MotoPage from "@/pages/MotoPage";
+import PaidBillsPage from "@/pages/PaidBillsPage";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -39,6 +40,7 @@ const ProtectedRoutes = () => {
         <Route path="reports" element={<ReportsPage />} />
         <Route path="finance" element={<FinancePage />} />
         <Route path="moto" element={<MotoPage />} />
+        <Route path="paid-bills" element={<PaidBillsPage />} />
         <Route path="share" element={<SharePage />} />
       </Route>
       <Route path="*" element={<NotFound />} />
