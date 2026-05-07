@@ -127,6 +127,33 @@ export type Database = {
         }
         Relationships: []
       }
+      paid_bills: {
+        Row: {
+          amount: number
+          category: string | null
+          created_at: string
+          description: string
+          id: string
+          payment_date: string
+        }
+        Insert: {
+          amount?: number
+          category?: string | null
+          created_at?: string
+          description: string
+          id?: string
+          payment_date?: string
+        }
+        Update: {
+          amount?: number
+          category?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          payment_date?: string
+        }
+        Relationships: []
+      }
       service_orders: {
         Row: {
           completed_at: string | null
