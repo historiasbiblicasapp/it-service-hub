@@ -1,0 +1,22 @@
+name: Keep Supabase Active
+
+on:
+  schedule:
+    - cron: "0 0 */3 * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST API
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" \
+            "https://lqedqdervqxfhmzzqlcc.supabase.co/rest/v1/" \
+            -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxxZWRxZGVydnF4ZmhtenpxbGNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNDAyNDMsImV4cCI6MjA5MTcxNjI0M30.3jFeDXCcH2LTXbt0Jf06HiIzwWmYIa_nYlCKsGm4rpU"
+      - name: Ping Supabase Database
+        run: |
+          curl -s -o /dev/null -w "%{http_code}" \
+            "https://lqedqdervqxfhmzzqlcc.supabase.co/rest/v1/customers?select=count&limit=0" \
+            -H "apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxxZWRxZGVydnF4ZmhtenpxbGNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxNDAyNDMsImV4cCI6MjA5MTcxNjI0M30.3jFeDXCcH2LTXbt0Jf06HiIzwWmYIa_nYlCKsGm4rpU" \
+            -H "Accept: application/json"
