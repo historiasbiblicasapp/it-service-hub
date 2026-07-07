@@ -127,6 +127,33 @@ export type Database = {
         }
         Relationships: []
       }
+      moto_maintenance: {
+        Row: {
+          created_at: string
+          id: string
+          km: number | null
+          maintenance_type: string
+          notes: string | null
+          service_date: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          km?: number | null
+          maintenance_type: string
+          notes?: string | null
+          service_date?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          km?: number | null
+          maintenance_type?: string
+          notes?: string | null
+          service_date?: string
+        }
+        Relationships: []
+      }
       paid_bills: {
         Row: {
           amount: number
