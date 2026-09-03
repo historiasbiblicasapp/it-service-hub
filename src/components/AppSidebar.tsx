@@ -1,5 +1,5 @@
 import { useAuth } from "@/contexts/AuthContext";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Wrench, Users, ClipboardList, BarChart3, LogOut, Share2, Wallet, Bike, Receipt, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/logo.jpg";
@@ -23,13 +23,18 @@ interface AppSidebarProps {
 const AppSidebar = ({ onNavigate }: AppSidebarProps) => {
   const { signOut } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
 
   return (
     <aside className="w-64 min-h-screen bg-primary flex flex-col">
-      <div className="p-4 flex items-center gap-3 border-b border-primary-foreground/10">
+      <button
+        type="button"
+        onClick={() => navigate("/")}
+        className="p-4 flex items-center gap-3 border-b border-primary-foreground/10 text-left hover:bg-primary-foreground/10 transition-colors cursor-pointer"
+      >
         <img src={logo} alt="Ponto Digital" className="w-12 h-12 rounded-xl object-contain bg-white/90" />
         <span className="text-primary-foreground font-bold text-lg">Ponto Digital</span>
-      </div>
+      </button>
 
       <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
         {navItems.map((item) => (
