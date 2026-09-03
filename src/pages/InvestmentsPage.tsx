@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
 import { Pencil, Trash2, Plus, ArrowDownCircle, TrendingUp } from "lucide-react";
@@ -301,6 +301,15 @@ const InvestmentsPage = () => {
                 ))
               )}
             </TableBody>
+            {investments.length > 0 && (
+              <TableFooter>
+                <TableRow>
+                  <TableCell colSpan={2} className="font-medium">Total investido</TableCell>
+                  <TableCell className="text-right font-bold">{fmtMoney(totals.invested)}</TableCell>
+                  <TableCell colSpan={4} />
+                </TableRow>
+              </TableFooter>
+            )}
           </Table>
         </CardContent>
       </Card>
