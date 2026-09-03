@@ -17,11 +17,11 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "placeholder.svg"],
+      includeAssets: ["favicon.png", "icon-192x192.png", "icon-512x512.png", "apple-touch-icon.png"],
       manifest: {
-        name: "Ponto Digital - Servios de Informtica",
+        name: "Ponto Digital - Serviços de Informática",
         short_name: "Ponto Digital",
-        description: "Gesto de atendimentos, clientes e servios de TI",
+        description: "Gestão de atendimentos, clientes e serviços de TI",
         theme_color: "#1e40af",
         background_color: "#ffffff",
         display: "standalone",
@@ -30,19 +30,16 @@ export default defineConfig(({ mode }) => ({
         start_url: "/",
         icons: [
           {
-            src: "favicon.ico",
-            sizes: "64x64 32x32 24x24 16x16",
-            type: "image/x-icon"
-          },
-          {
-            src: "logo.jpg",
+            src: "icon-192x192.png",
             sizes: "192x192",
-            type: "image/jpeg"
+            type: "image/png",
+            purpose: "any maskable"
           },
           {
-            src: "logo.jpg",
+            src: "icon-512x512.png",
             sizes: "512x512",
-            type: "image/jpeg"
+            type: "image/png",
+            purpose: "any maskable"
           }
         ]
       },
