@@ -1,5 +1,5 @@
 import { useAuth } from "@/contexts/AuthContext";
-import { NavLink, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { Wrench, Users, ClipboardList, BarChart3, LogOut, Share2, Wallet, Bike, Receipt, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import logo from "@/assets/logo.jpg";
