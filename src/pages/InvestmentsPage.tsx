@@ -301,6 +301,15 @@ const InvestmentsPage = () => {
                 ))
               )}
             </TableBody>
+            {investments.length > 0 && (
+              <TableFooter>
+                <TableRow>
+                  <TableCell colSpan={2} className="font-medium">Total investido</TableCell>
+                  <TableCell className="text-right font-bold">{fmtMoney(totals.invested)}</TableCell>
+                  <TableCell colSpan={4} />
+                </TableRow>
+              </TableFooter>
+            )}
           </Table>
         </CardContent>
       </Card>
