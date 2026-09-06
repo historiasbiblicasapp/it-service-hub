@@ -207,7 +207,13 @@ const InvestmentsPage = () => {
     const invested = investments.reduce((s, i) => s + Number(i.amount), 0);
     const expected = investments.reduce((s, i) => s + Number(i.expected_return), 0);
     const withdrawn = withdrawals.reduce((s, w) => s + Number(w.amount), 0);
-    return { invested, expected, withdrawn, balance: invested + expected - withdrawn };
+    return {
+      invested,
+      expected,
+      withdrawn,
+      balance: invested + expected - withdrawn,
+      realGain: invested - withdrawn,
+    };
   }, [investments, withdrawals]);
 
   const withdrawnByInvestment = useMemo(() => {
@@ -240,7 +246,7 @@ const InvestmentsPage = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground font-medium">Total investido</CardTitle></CardHeader>
           <CardContent className="text-lg md:text-xl font-bold">{fmtMoney(totals.invested)}</CardContent>
@@ -252,6 +258,10 @@ const InvestmentsPage = () => {
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground font-medium">Total retirado</CardTitle></CardHeader>
           <CardContent className="text-lg md:text-xl font-bold text-destructive">{fmtMoney(totals.withdrawn)}</CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground font-medium">Ganho real</CardTitle></CardHeader>
+          <CardContent className={`text-lg md:text-xl font-bold ${totals.realGain >= 0 ? "text-emerald-600" : "text-destructive"}`}>{fmtMoney(totals.realGain)}</CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-xs text-muted-foreground font-medium">Saldo estimado</CardTitle></CardHeader>
