@@ -212,7 +212,7 @@ const InvestmentsPage = () => {
       expected,
       withdrawn,
       balance: invested + expected - withdrawn,
-      realGain: invested - withdrawn,
+      realGain: withdrawn - invested,
     };
   }, [investments, withdrawals]);
 
