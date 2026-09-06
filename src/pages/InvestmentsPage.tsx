@@ -207,7 +207,13 @@ const InvestmentsPage = () => {
     const invested = investments.reduce((s, i) => s + Number(i.amount), 0);
     const expected = investments.reduce((s, i) => s + Number(i.expected_return), 0);
     const withdrawn = withdrawals.reduce((s, w) => s + Number(w.amount), 0);
-    return { invested, expected, withdrawn, balance: invested + expected - withdrawn };
+    return {
+      invested,
+      expected,
+      withdrawn,
+      balance: invested + expected - withdrawn,
+      realGain: invested - withdrawn,
+    };
   }, [investments, withdrawals]);
 
   const withdrawnByInvestment = useMemo(() => {
