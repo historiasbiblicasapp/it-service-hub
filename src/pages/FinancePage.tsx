@@ -51,6 +51,28 @@ const FinancePage = () => {
     return true;
   });
 
+  const { data: balanceBills = [] } = useQuery({
+    queryKey: ["paid-bills-balance"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("paid_bills")
+        .select("id, amount, payment_date, due_date, deduct_from, paid")
+        .eq("paid", true)
+        .neq("deduct_from", "none");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const billsFromBalance = balanceBills.filter((b) => {
+    const d = (b.payment_date || b.due_date || "").slice(0, 10);
+    if (isFiltered && filterStartDate && d < filterStartDate) return false;
+    if (isFiltered && filterEndDate && d > filterEndDate) return false;
+    return true;
+  });
+
+  const totalBillsFromBalance = billsFromBalance.reduce((acc, b) => acc + Number(b.amount), 0);
+
   const { data: categories = [] } = useQuery({
     queryKey: ["expense-categories"],
     queryFn: async () => {
@@ -58,6 +80,7 @@ const FinancePage = () => {
       if (error) throw error;
       return data;
     },
+
   });
 
   const handleFilter = () => {
