@@ -51,6 +51,28 @@ const FinancePage = () => {
     return true;
   });
 
+  const { data: balanceBills = [] } = useQuery({
+    queryKey: ["paid-bills-balance"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("paid_bills")
+        .select("id, amount, payment_date, due_date, deduct_from, paid")
+        .eq("paid", true)
+        .neq("deduct_from", "none");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const billsFromBalance = balanceBills.filter((b) => {
+    const d = (b.payment_date || b.due_date || "").slice(0, 10);
+    if (isFiltered && filterStartDate && d < filterStartDate) return false;
+    if (isFiltered && filterEndDate && d > filterEndDate) return false;
+    return true;
+  });
+
+  const totalBillsFromBalance = billsFromBalance.reduce((acc, b) => acc + Number(b.amount), 0);
+
   const { data: categories = [] } = useQuery({
     queryKey: ["expense-categories"],
     queryFn: async () => {
@@ -58,6 +80,7 @@ const FinancePage = () => {
       if (error) throw error;
       return data;
     },
+
   });
 
   const handleFilter = () => {
@@ -283,7 +306,21 @@ const FinancePage = () => {
             <p className="text-3xl font-bold">{expenses.length}</p>
           </CardContent>
         </Card>
+        <Card className="flex-1">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
+              <Wallet className="w-4 h-4" /> Contas pagas com saldo
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-destructive">R$ {totalBillsFromBalance.toFixed(2)}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Total: R$ {(totalExpenses + totalBillsFromBalance).toFixed(2)}
+            </p>
+          </CardContent>
+        </Card>
       </div>
+
 
       {categoryData.length > 0 && (
         <Card>

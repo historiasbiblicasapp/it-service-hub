@@ -230,25 +230,43 @@ export type Database = {
           amount: number
           category: string | null
           created_at: string
+          deduct_from: string
           description: string
+          due_date: string | null
           id: string
-          payment_date: string
+          installment_group: string | null
+          installment_number: number
+          installment_total: number
+          paid: boolean
+          payment_date: string | null
         }
         Insert: {
           amount?: number
           category?: string | null
           created_at?: string
+          deduct_from?: string
           description: string
+          due_date?: string | null
           id?: string
-          payment_date?: string
+          installment_group?: string | null
+          installment_number?: number
+          installment_total?: number
+          paid?: boolean
+          payment_date?: string | null
         }
         Update: {
           amount?: number
           category?: string | null
           created_at?: string
+          deduct_from?: string
           description?: string
+          due_date?: string | null
           id?: string
-          payment_date?: string
+          installment_group?: string | null
+          installment_number?: number
+          installment_total?: number
+          paid?: boolean
+          payment_date?: string | null
         }
         Relationships: []
       }
