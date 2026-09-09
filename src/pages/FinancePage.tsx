@@ -306,7 +306,21 @@ const FinancePage = () => {
             <p className="text-3xl font-bold">{expenses.length}</p>
           </CardContent>
         </Card>
+        <Card className="flex-1">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
+              <Wallet className="w-4 h-4" /> Contas pagas com saldo
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-destructive">R$ {totalBillsFromBalance.toFixed(2)}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Total: R$ {(totalExpenses + totalBillsFromBalance).toFixed(2)}
+            </p>
+          </CardContent>
+        </Card>
       </div>
+
 
       {categoryData.length > 0 && (
         <Card>
